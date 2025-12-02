@@ -1,0 +1,54 @@
+{
+  "tests": [
+    {
+      "name": "Test YooKassa payment without keys",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 900.0,
+        "nickname": "testuser123",
+        "robux": 1000,
+        "method": "yookassa"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string",
+        "needsSetup": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test Sberbank payment instructions",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 450.0,
+        "nickname": "player456",
+        "robux": 500,
+        "method": "sberbank"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "method": "sberbank"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test transfer payment instructions",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 1800.0,
+        "nickname": "gamer789",
+        "robux": 2000,
+        "method": "transfer"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "method": "transfer",
+        "instructions": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

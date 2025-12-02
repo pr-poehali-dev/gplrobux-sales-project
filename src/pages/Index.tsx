@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import Icon from "@/components/ui/icon";
 import { toast } from "sonner";
+import { PaymentDialog } from "@/components/PaymentDialog";
 
 interface Review {
   id: string;
@@ -54,6 +55,8 @@ const Index = () => {
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(5);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
 
   const ROBUX_RATE = 0.9;
 
@@ -105,12 +108,54 @@ const Index = () => {
     setRobuxAmount(Math.floor(numValue / ROBUX_RATE).toString());
   };
 
-  const handlePayment = (method: string) => {
+  const handlePayment = async (method: string) => {
     if (!nickname || !robuxAmount) {
       toast.error("Заполните все поля!");
       return;
     }
-    toast.success(`Переход к оплате через ${method}...`);
+
+    const paymentMethod = method === "ЮКасса" ? "yookassa" : method === "Сбербанк" ? "sberbank" : "transfer";
+
+    try {
+      toast.loading("Создание платежа...");
+      
+      const response = await fetch("https://functions.poehali.dev/a278235f-2bb0-4694-8349-bf2d310be4ef", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: parseFloat(rubleAmount),
+          nickname: nickname,
+          robux: parseInt(robuxAmount),
+          method: paymentMethod
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.payment_url) {
+          toast.success("Переход к оплате...");
+          window.location.href = data.payment_url;
+        } else if (data.instructions) {
+          toast.success("Инструкции для оплаты получены!");
+          showPaymentInstructions(data);
+        } else if (data.needsSetup) {
+          toast.error(data.error);
+        }
+      } else {
+        toast.error(data.error || "Ошибка создания платежа");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Ошибка соединения с сервером");
+    }
+  };
+
+  const showPaymentInstructions = (data: any) => {
+    setPaymentData(data);
+    setPaymentDialogOpen(true);
   };
 
   const handleAddReview = () => {
@@ -353,6 +398,12 @@ const Index = () => {
           <p>© 2024 GPLrobux. Быстрая доставка робуксов для вашей игры.</p>
         </footer>
       </div>
+
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        data={paymentData}
+      />
     </div>
   );
 };
